@@ -50,26 +50,26 @@ local function run(msg, matches)
       if data[tostring(matches[2])]['settings']['lock_member'] == 'yes' and not is_owner2(msg.from.id, matches[2]) then
         return 'Group is private.'
       end
-          local chat_id = "chat#id"..matches[2]
+          local chat_id = "channel#id"..matches[2]
           local user_id = "user#id"..msg.from.id
-   	  chat_add_user(chat_id, user_id, ok_cb, false)   
+   	  chat_add_user(channel_id, user_id, ok_cb, false)   
 	  local group_name = data[tostring(matches[2])]['settings']['set_name']	
 	  return "Added you to chat:\n\n👥"..group_name.." (ID:"..matches[2]..")"
         elseif matches[1] == 'join' and not data[tostring(matches[2])] then
 		
          	return "Chat not found."
         end
-     if matches[1] == 'chats'then
-       if is_admin(msg) and msg.to.type == 'chat' then
+     if matches[1] == 'channels'then
+       if is_admin(msg) and msg.to.type == 'channel' then
          return chat_list(msg)
-       elseif msg.to.type ~= 'chat' then
+       elseif msg.to.type ~= 'channel' then
          return chat_list(msg)
        end      
      end
-     if matches[1] == 'chatlist'then
-       if is_admin(msg) and msg.to.type == 'chat' then
-         send_document("chat#id"..msg.from.id, "./groups/lists/listed_groups.txt", ok_cb, false)
-       elseif msg.to.type ~= 'chat' then
+     if matches[1] == 'channellist'then
+       if is_admin(msg) and msg.to.type == 'channel' then
+         send_document("channel#id"..msg.from.id, "./groups/lists/listed_groups.txt", ok_cb, false)
+       elseif msg.to.type ~= 'channel' then
          send_document("user#id"..msg.from.id, "./groups/lists/listed_groups.txt", ok_cb, false) 
        end      
      end
@@ -78,11 +78,11 @@ end
 
 return {
     patterns = {
-      "^[/!](chats)$",
-      "^[/!](chatlist)$",
+      "^[/!](channels)$",
+      "^[/!](channellist)$",
       "^[/!](join) (.*)$",
       "^[/!](kickme) (.*)$",
-      "^!!tgservice (chat_add_user)$"
+      "^!!tgservice (channel_add_user)$"
     },
     run = run,
 }
