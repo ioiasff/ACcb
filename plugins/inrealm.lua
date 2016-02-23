@@ -6,7 +6,7 @@ local function create_group(msg)
         -- superuser and admins only (because sudo are always has privilege)
         if is_sudo(msg) or is_realm(msg) and is_admin(msg) then
                 local group_creator = msg.from.print_name
-                create_group_chat (group_creator, group_name, ok_cb, false)
+                create_group_channel (group_creator, group_name, ok_cb, false)
                 return 'Group [ '..string.gsub(group_name, '_', ' ')..' ] has been created.'
         end
 end
@@ -15,7 +15,7 @@ local function create_realm(msg)
         -- superuser and admins only (because sudo are always has privilege)
         if is_sudo(msg) or is_realm(msg) and is_admin(msg) then
                 local group_creator = msg.from.print_name
-                create_group_chat (group_creator, group_name, ok_cb, false)
+                create_group_channel (group_creator, group_name, ok_cb, false)
                 return 'Realm [ '..string.gsub(group_name, '_', ' ')..' ] has been created.'
         end
 end
@@ -23,8 +23,8 @@ end
 
 local function killchat(cb_extra, success, result)
   local receiver = cb_extra.receiver
-  local chat_id = "chat#id"..result.id
-  local chatname = result.print_name
+  local channel_id = "channel#id"..result.id
+  local channelname = result.print_name
   for k,v in pairs(result.members) do
     kick_user_any(v.id, result.id)     
   end
@@ -32,8 +32,8 @@ end
 
 local function killrealm(cb_extra, success, result)
   local receiver = cb_extra.receiver
-  local chat_id = "chat#id"..result.id
-  local chatname = result.print_name
+  local channel_id = "channel#id"..result.id
+  local channelname = result.print_name
   for k,v in pairs(result.members) do
     kick_user_any(v.id, result.id)     
   end
@@ -56,8 +56,8 @@ local function callbackres(extra, success, result)
 --vardump(result)
   local user = result.id
   local name = string.gsub(result.print_name, "_", " ")
-  local chat = 'chat#id'..extra.chatid
-  send_large_msg(chat, user..'\n'..name)
+  local channel = 'channel#id'..extra.channelid
+  send_large_msg(channel, user..'\n'..name)
   return user
 end
 
@@ -92,7 +92,7 @@ local function lock_group_name(msg, data, target)
         else
             data[tostring(target)]['settings']['lock_name'] = 'yes'
                 save_data(_config.moderation.data, data)
-                rename_chat('chat#id'..target, group_name_set, ok_cb, false)
+                rename_chat('channel#id'..target, group_name_set, ok_cb, false)
         return 'Group name has been locked'
         end
 end
@@ -210,8 +210,8 @@ end
 local function returnids(cb_extra, success, result)
  
         local receiver = cb_extra.receiver
-    local chat_id = "chat#id"..result.id
-    local chatname = result.print_name
+    local channel_id = "channel#id"..result.id
+    local channelname = result.print_name
     local text = 'Users in '..string.gsub(chatname,"_"," ")..' ('..result.id..'):'..'\n'..''
     for k,v in pairs(result.members) do
     	if v.print_name then
@@ -228,8 +228,8 @@ end
  
 local function returnidsfile(cb_extra, success, result)
     local receiver = cb_extra.receiver
-    local chat_id = "chat#id"..result.id
-    local chatname = result.print_name
+    local channel_id = "channel#id"..result.id
+    local channelname = result.print_name
     local text = 'Users in '..string.gsub(chatname,"_"," ")..' ('..result.id..'):'..'\n'..''
     for k,v in pairs(result.members) do
     	if v.print_name then
@@ -241,7 +241,7 @@ local function returnidsfile(cb_extra, success, result)
         file:write(text)
         file:flush()
         file:close()
-        send_document("chat#id"..result.id,"./groups/lists/"..result.id.."memberlist.txt", ok_cb, false)
+        send_document("channel#id"..result.id,"./groups/lists/"..result.id.."memberlist.txt", ok_cb, false)
 end
  
 local function admin_promote(msg, admin_id)
@@ -444,7 +444,7 @@ function run(msg, matches)
    	local name_log = user_print_name(msg.from)
        if matches[1] == 'log' and is_owner(msg) then
 		savelog(msg.to.id, "log file created by owner")
-		send_document("chat#id"..msg.to.id,"./groups/"..msg.to.id.."log.txt", ok_cb, false)
+		send_document("channel#id"..msg.to.id,"./groups/"..msg.to.id.."log.txt", ok_cb, false)
         end
 
 	if matches[1] == 'who' and is_momod(msg) then
@@ -539,8 +539,8 @@ function run(msg, matches)
 		    data[tostring(matches[2])]['settings']['set_name'] = new_name
 		    save_data(_config.moderation.data, data)
 		    local group_name_set = data[tostring(matches[2])]['settings']['set_name']
-		    local to_rename = 'chat#id'..matches[2]
-		    rename_chat(to_rename, group_name_set, ok_cb, false)
+		    local to_rename = 'channel#id'..matches[2]
+		    rename_channel(to_rename, group_name_set, ok_cb, false)
                     savelog(msg.to.id, "Group { "..msg.to.print_name.." }  name changed to [ "..new_name.." ] by "..name_log.." ["..msg.from.id.."]")
 		end
 
@@ -556,12 +556,12 @@ function run(msg, matches)
                   return set_log_group(msg)
                 end
               end
-                if matches[1] == 'kill' and matches[2] == 'chat' then
+                if matches[1] == 'kill' and matches[2] == 'channel' then
                   if not is_admin(msg) then
                      return nil
                   end
                   if is_realm(msg) then
-                     local receiver = 'chat#id'..matches[3]
+                     local receiver = 'channel#id'..matches[3]
                      return modrem(msg),
                      print("Closing Group: "..receiver),
                      chat_info(receiver, killchat, {receiver=receiver})
@@ -574,7 +574,7 @@ function run(msg, matches)
                      return nil
                   end
                   if is_realm(msg) then
-                     local receiver = 'chat#id'..matches[3]
+                     local receiver = 'channel#id'..matches[3]
                      return realmrem(msg),
                      print("Closing realm: "..receiver),
                      chat_info(receiver, killrealm, {receiver=receiver})
@@ -582,12 +582,12 @@ function run(msg, matches)
                      return 'Error: Realm '..matches[3]..' not found' 
                     end
                  end
-		if matches[1] == 'chat_add_user' then
+		if matches[1] == 'channel_add_user' then
 		    if not msg.service then
 		        return "Are you trying to troll me?"
 		    end
 		    local user = 'user#id'..msg.action.user.id
-		    local chat = 'chat#id'..msg.to.id
+		    local channel = 'channel#id'..msg.to.id
 		    if not is_admin(msg) then
 				chat_del_user(chat, user, ok_cb, true)
 			end
@@ -622,9 +622,9 @@ function run(msg, matches)
 			return admin_list(msg)
 		end
 		if matches[1] == 'list' and matches[2] == 'groups' then
-                  if msg.to.type == 'chat' then
+                  if msg.to.type == 'channel' then
 			groups_list(msg)
-		        send_document("chat#id"..msg.to.id, "./groups/lists/groups.txt", ok_cb, false)	
+		        send_document("channel#id"..msg.to.id, "./groups/lists/groups.txt", ok_cb, false)	
 			return "Group list created" --group_list(msg)
                    elseif msg.to.type == 'user' then 
                         groups_list(msg)
@@ -633,9 +633,9 @@ function run(msg, matches)
                   end
 		end
 		if matches[1] == 'list' and matches[2] == 'realms' then
-                  if msg.to.type == 'chat' then
+                  if msg.to.type == 'channel' then
 			realms_list(msg)
-		        send_document("chat#id"..msg.to.id, "./groups/lists/realms.txt", ok_cb, false)	
+		        send_document("channel#id"..msg.to.id, "./groups/lists/realms.txt", ok_cb, false)	
 			return "Realms list created" --realms_list(msg)
                    elseif msg.to.type == 'user' then 
                         realms_list(msg)
@@ -671,7 +671,7 @@ return {
         "^[!/](wholist)$",
         "^[!/](who)$",
         "^[!/](type)$",
-    "^[!/](kill) (chat) (%d+)$",
+    "^[!/](kill) (channel) (%d+)$",
     "^[!/](kill) (realm) (%d+)$",
     "^[!/](addadmin) (.*)$", -- sudoers only
     "^[!/](removeadmin) (.*)$", -- sudoers only
