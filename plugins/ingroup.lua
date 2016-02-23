@@ -529,7 +529,7 @@ end
 
 local function promote(receiver, member_username, member_id)
   local data = load_data(_config.moderation.data)
-  local group = string.gsub(receiver, 'chat#id', '')
+  local group = string.gsub(receiver, 'channel#id', '')
   if not data[group] then
     return send_large_msg(receiver, 'Group is not added.')
   end
@@ -550,14 +550,14 @@ local function promote_by_reply(extra, success, result)
       member_username = full_name
     end
     local member_id = msg.from.id
-    if msg.to.type == 'chat' then
+    if msg.to.type == 'channel' then
       return promote(get_receiver(msg), member_username, member_id)
     end  
 end
 
 local function demote(receiver, member_username, member_id)
   local data = load_data(_config.moderation.data)
-  local group = string.gsub(receiver, 'chat#id', '')
+  local group = string.gsub(receiver, 'channel#id', '')
   if not data[group] then
     return send_large_msg(receiver, 'Group is not added.')
   end
@@ -578,7 +578,7 @@ local function demote_by_reply(extra, success, result)
       member_username = full_name
     end
     local member_id = msg.from.id
-    if msg.to.type == 'chat' then
+    if msg.to.type == 'channel' then
       return demote(get_receiver(msg), member_username, member_id)
     end  
 end
@@ -602,7 +602,7 @@ local function promote_demote_res(extra, success, result)
       local member_username = "@"..result.username
       local chat_id = extra.chat_id
       local mod_cmd = extra.mod_cmd
-      local receiver = "chat#id"..chat_id
+      local receiver = "channel#id"..channel_id
       if mod_cmd == 'promote' then
         return promote(receiver, member_username, member_id)
       elseif mod_cmd == 'demote' then
@@ -633,8 +633,8 @@ local function callbackres(extra, success, result)
 --vardump(result)
   local user = result.id
   local name = string.gsub(result.print_name, "_", " ")
-  local chat = 'chat#id'..extra.chatid
-  send_large_msg(chat, user..'\n'..name)
+  local channel = 'channel#id'..extra.channelid
+  send_large_msg(channel, user..'\n'..name)
   return user
 end
 
@@ -646,7 +646,7 @@ end
 
 local function cleanmember(cb_extra, success, result)
   local receiver = cb_extra.receiver
-  local chat_id = "chat#id"..result.id
+  local chat_id = "channel#id"..result.id
   local chatname = result.print_name
   for k,v in pairs(result.members) do
     kick_user(v.id, result.id)     
@@ -655,7 +655,7 @@ end
 
 local function killchat(cb_extra, success, result)
   local receiver = cb_extra.receiver
-  local chat_id = "chat#id"..result.id
+  local chat_id = "channel#id"..result.id
   local chatname = result.print_name
   for k,v in pairs(result.members) do
     kick_user_any(v.id, result.id)     
@@ -664,31 +664,31 @@ end
 
 local function killrealm(cb_extra, success, result)
   local receiver = cb_extra.receiver
-  local chat_id = "chat#id"..result.id
+  local chat_id = "channel#id"..result.id
   local chatname = result.print_name
   for k,v in pairs(result.members) do
     kick_user_any(v.id, result.id)     
   end
 end
 
-local function user_msgs(user_id, chat_id)
+local function user_msgs(user_id, channel_id)
   local user_info
   local uhash = 'user:'..user_id
   local user = redis:hgetall(uhash)
-  local um_hash = 'msgs:'..user_id..':'..chat_id
+  local um_hash = 'msgs:'..user_id..':'..channel_id
   user_info = tonumber(redis:get(um_hash) or 0)
   return user_info
 end
 
 local function kick_zero(cb_extra, success, result)
-    local chat_id = cb_extra.chat_id
-    local chat = "chat#id"..chat_id
+    local channel_id = cb_extra.channel_id
+    local channel = "channel#id"..channel_id
     local ci_user
     local re_user
     for k,v in pairs(result.members) do
         local si = false
         ci_user = v.id
-        local hash = 'chat:'..chat_id..':users'
+        local hash = 'channel:'..channel_id..':users'
         local users = redis:smembers(hash)
         for i = 1, #users do
             re_user = users[i]
@@ -699,7 +699,7 @@ local function kick_zero(cb_extra, success, result)
         if not si then
             if ci_user ~= our_id then
                 if not is_momod2(ci_user, chat_id) then
-                  chat_del_user(chat, 'user#id'..ci_user, ok_cb, true)
+                  chat_del_user(channel, 'user#id'..ci_user, ok_cb, true)
                 end
             end
         end
@@ -707,20 +707,20 @@ local function kick_zero(cb_extra, success, result)
 end
 
 local function kick_inactive(chat_id, num, receiver)
-    local hash = 'chat:'..chat_id..':users'
+    local hash = 'channel:'..channel_id..':users'
     local users = redis:smembers(hash)
     -- Get user info
     for i = 1, #users do
         local user_id = users[i]
-        local user_info = user_msgs(user_id, chat_id)
+        local user_info = user_msgs(user_id, channel_id)
         local nmsg = user_info
         if tonumber(nmsg) < tonumber(num) then
             if not is_momod2(user_id, chat_id) then
-              chat_del_user('chat#id'..chat_id, 'user#id'..user_id, ok_cb, true)
+              chat_del_user('channel#id'..chat_id, 'user#id'..user_id, ok_cb, true)
             end
         end
     end
-    return chat_info(receiver, kick_zero, {chat_id = chat_id})
+    return chat_info(receiver, kick_zero, {channel_id = channel_id})
 end
 
 local function run(msg, matches)
@@ -755,22 +755,22 @@ local function run(msg, matches)
     print("group "..msg.to.print_name.."("..msg.to.id..") removed as a realm")
     return realmrem(msg)
   end
-  if matches[1] == 'chat_created' and msg.from.id == 0 and group_type == "group" then
+  if matches[1] == 'channel_created' and msg.from.id == 0 and group_type == "group" then
     return automodadd(msg)
   end
-  if matches[1] == 'chat_created' and msg.from.id == 0 and group_type == "realm" then
+  if matches[1] == 'channel_created' and msg.from.id == 0 and group_type == "realm" then
     return autorealmadd(msg)
   end
 
   if msg.to.id and data[tostring(msg.to.id)] then
     local settings = data[tostring(msg.to.id)]['settings']
-    if matches[1] == 'chat_add_user' then
+    if matches[1] == 'channel_add_user' then
       if not msg.service then
         return "Are you trying to troll me?"
       end
       local group_member_lock = settings.lock_member
       local user = 'user#id'..msg.action.user.id
-      local chat = 'chat#id'..msg.to.id
+      local channel = 'channel#id'..msg.to.id
       if group_member_lock == 'yes' and not is_owner2(msg.action.user.id, msg.to.id) then
         chat_del_user(chat, user, ok_cb, true)
       elseif group_member_lock == 'yes' and tonumber(msg.from.id) == tonumber(our_id) then
@@ -779,15 +779,15 @@ local function run(msg, matches)
         return nil
       end
     end
-    if matches[1] == 'chat_del_user' then
+    if matches[1] == 'channel_del_user' then
       if not msg.service then
          -- return "Are you trying to troll me?"
       end
       local user = 'user#id'..msg.action.user.id
-      local chat = 'chat#id'..msg.to.id
+      local chat = 'channel#id'..msg.to.id
       savelog(msg.to.id, name_log.." ["..msg.from.id.."] deleted user  "..user)
     end
-    if matches[1] == 'chat_delete_photo' then
+    if matches[1] == 'channel_delete_photo' then
       if not msg.service then
         return "Are you trying to troll me?"
       end
@@ -843,13 +843,13 @@ local function run(msg, matches)
         return nil
       end
     end
-    if matches[1] == 'chat_rename' then
+    if matches[1] == 'channel_rename' then
       if not msg.service then
         return "Are you trying to troll me?"
       end
       local group_name_set = settings.set_name
       local group_name_lock = settings.lock_name
-      local to_rename = 'chat#id'..msg.to.id
+      local to_rename = 'channel#id'..msg.to.id
       if group_name_lock == 'yes' then
         if group_name_set ~= tostring(msg.to.print_name) then
           local namehash = 'name:changed:'..msg.to.id..':'..msg.from.id
@@ -879,7 +879,7 @@ local function run(msg, matches)
       data[tostring(msg.to.id)]['settings']['set_name'] = new_name
       save_data(_config.moderation.data, data)
       local group_name_set = data[tostring(msg.to.id)]['settings']['set_name']
-      local to_rename = 'chat#id'..msg.to.id
+      local to_rename = 'channel#id'..msg.to.id
       rename_chat(to_rename, group_name_set, ok_cb, false)
       
       savelog(msg.to.id, "Group { "..msg.to.print_name.." }  name changed to [ "..new_name.." ] by "..name_log.." ["..msg.from.id.."]")
@@ -1052,7 +1052,7 @@ local function run(msg, matches)
         return "For moderators only!"
       end
       local function callback (extra , success, result)
-        local receiver = 'chat#'..msg.to.id
+        local receiver = 'channel#'..msg.to.id
         if success == 0 then
            return send_large_msg(receiver, '*Error: Invite link failed* \nReason: Not creator.')
         end
@@ -1060,9 +1060,9 @@ local function run(msg, matches)
         data[tostring(msg.to.id)]['settings']['set_link'] = result
         save_data(_config.moderation.data, data)
       end
-      local receiver = 'chat#'..msg.to.id
+      local receiver = 'channel#'..msg.to.id
       savelog(msg.to.id, name_log.." ["..msg.from.id.."] revoked group link ")
-      return export_chat_link(receiver, callback, true)
+      return export_channel_link(receiver, callback, true)
     end
     if matches[1] == 'link' then
       if not is_momod(msg) then
@@ -1102,7 +1102,7 @@ local function run(msg, matches)
       return "Group owner is ["..group_owner..']'
     end
     if matches[1] == 'setgpowner' then
-      local receiver = "chat#id"..matches[2]
+      local receiver = "channel#id"..matches[2]
       if not is_admin(msg) then
         return "For admins only!"
       end
@@ -1160,7 +1160,7 @@ local function run(msg, matches)
         savelog(msg.to.id, name_log.." ["..msg.from.id.."] cleaned about")
       end     
     end
-    if matches[1] == 'kill' and matches[2] == 'chat' then
+    if matches[1] == 'kill' and matches[2] == 'channel' then
       if not is_admin(msg) then
           return nil
       end
@@ -1232,7 +1232,7 @@ return {
   "^[!/](promote)",
   "^[!/](help)$",
   "^[!/](clean) (.*)$",
-  "^[!/](kill) (chat)$",
+  "^[!/](kill) (channel)$",
   "^[!/](kill) (realm)$",
   "^[!/](demote) (.*)$",
   "^[!/](demote)",
