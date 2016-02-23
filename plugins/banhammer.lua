@@ -4,7 +4,7 @@ local function pre_process(msg)
   if msg.action and msg.action.type then
     local action = msg.action.type
     -- Check if banned user joins chat by link
-    if action == 'chat_add_user_link' then
+    if action == 'channel_add_user_link' then
       local user_id = msg.from.id
       print('Checking invited user '..user_id)
       local banned = is_banned(user_id, msg.to.id)
@@ -16,7 +16,7 @@ local function pre_process(msg)
       end
     end
     -- Check if banned user joins chat
-    if action == 'chat_add_user' then
+    if action == 'channel_add_user' then
       local user_id = msg.action.user.id
       print('Checking invited user '..user_id)
       local banned = is_banned(user_id, msg.to.id)
@@ -59,7 +59,7 @@ local function pre_process(msg)
   return msg
   end
   -- banned user is talking !
-  if msg.to.type == 'chat' then
+  if msg.to.type == 'channel' then
     local data = load_data(_config.moderation.data)
     local group = msg.to.id
     local texttext = 'groups'
@@ -74,7 +74,7 @@ local function pre_process(msg)
       print('Banned user talking!')
       local name = user_print_name(msg.from)
       savelog(msg.to.id, name.." ["..msg.from.id.."] banned user is talking !")-- Save to logs
-      kick_user(user_id, chat_id)
+      kick_user(user_id, channel_id)
       msg.text = ''
     end
   end
@@ -87,24 +87,24 @@ local function kick_ban_res(extra, success, result)
       local member_id = result.id
       local user_id = member_id
       local member = result.username
-      local chat_id = extra.chat_id
+      local channel_id = extra.chat_id
       local from_id = extra.from_id
       local get_cmd = extra.get_cmd
-      local receiver = "chat#id"..chat_id
+      local receiver = "channel#id"..channel_id
        if get_cmd == "kick" then
          if member_id == from_id then
              return send_large_msg(receiver, "You can't kick yourself")
          end
-         if is_momod2(member_id, chat_id) and not is_admin2(sender) then
+         if is_momod2(member_id, channel_id) and not is_admin2(sender) then
             return send_large_msg(receiver, "You can't kick mods/owner/admins")
          end
-         return kick_user(member_id, chat_id)
+         return kick_user(member_id, channel_id)
       elseif get_cmd == 'ban' then
-        if is_momod2(member_id, chat_id) and not is_admin2(sender) then
+        if is_momod2(member_id, channel_id) and not is_admin2(sender) then
           return send_large_msg(receiver, "You can't ban mods/owner/admins")
         end
         send_large_msg(receiver, 'User @'..member..' ['..member_id..'] banned')
-        return ban_user(member_id, chat_id)
+        return ban_user(member_id, channel_id)
       elseif get_cmd == 'unban' then
         send_large_msg(receiver, 'User @'..member..' ['..member_id..'] unbanned')
         local hash =  'banned:'..chat_id
@@ -136,10 +136,10 @@ local function run(msg, matches)
   end
   if matches[1]:lower() == 'kickme' then-- /kickme
   local receiver = get_receiver(msg)
-    if msg.to.type == 'chat' then
+    if msg.to.type == 'channel' then
       local name = user_print_name(msg.from)
       savelog(msg.to.id, name.." ["..msg.from.id.."] left using kickme ")-- Save to logs
-      chat_del_user("chat#id"..msg.to.id, "user#id"..msg.from.id, ok_cb, false)
+      chat_del_user("channel#id"..msg.to.id, "user#id"..msg.from.id, ok_cb, false)
     end
   end
 
@@ -152,7 +152,7 @@ local function run(msg, matches)
     if matches[2] and is_admin(msg) then
       chat_id = matches[2] 
     end
-    return ban_list(chat_id)
+    return ban_list(channel_id)
   end
   if matches[1]:lower() == 'ban' then-- /ban 
     if type(msg.reply_id)~="nil" and is_momod(msg) then
@@ -176,7 +176,7 @@ local function run(msg, matches)
         end
         local name = user_print_name(msg.from)
         savelog(msg.to.id, name.." ["..msg.from.id.."] baned user ".. matches[2])
-        ban_user(user_id, chat_id)
+        ban_user(user_id, channel_id)
       else
 		local cbres_extra = {
 		chat_id = msg.to.id,
@@ -195,7 +195,7 @@ local function run(msg, matches)
       local msgr = get_message(msg.reply_id,unban_by_reply, false)
     end
       local user_id = matches[2]
-      local chat_id = msg.to.id
+      local channel_id = msg.to.id
       local targetuser = matches[2]
       if string.match(targetuser, '^%d+$') then
         	local user_id = targetuser
@@ -206,7 +206,7 @@ local function run(msg, matches)
         	return 'User '..user_id..' unbanned'
       else
 		local cbres_extra = {
-			chat_id = msg.to.id,
+			channel_id = msg.to.id,
 			get_cmd = 'unban',
 			from_id = msg.from.id
 		}
@@ -239,7 +239,7 @@ if matches[1]:lower() == 'kick' then
       		local chat_id = msg.to.id
 		name = user_print_name(msg.from)
 		savelog(msg.to.id, name.." ["..msg.from.id.."] kicked user ".. matches[2])
-		kick_user(user_id, chat_id)
+		kick_user(user_id, channel_id)
 	else
 		local cbres_extra = {
 			chat_id = msg.to.id,
