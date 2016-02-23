@@ -32,9 +32,9 @@ local function pre_process(msg)
   end
 
   -- Save stats on Redis
-  if msg.to.type == 'chat' then
+  if msg.to.type == 'channel' then
     -- User is on chat
-    local hash = 'chat:'..msg.to.id..':users'
+    local hash = 'channel:'..msg.to.id..':users'
     redis:sadd(hash, msg.from.id)
   end
 
@@ -71,13 +71,13 @@ local function pre_process(msg)
       if is_momod(msg) then 
         return msg
       end
-      local chat = msg.to.id
+      local channel = msg.to.id
       local user = msg.from.id
       -- Return end if user was kicked before
       if kicktable[user] == true then
         return
       end
-      kick_user(user, chat)
+      kick_user(user, channel)
       if msg.to.type == "user" then
         block_user("user#id"..msg.from.id,ok_cb,false)--Block user if spammed in private
       end
@@ -103,10 +103,10 @@ local function pre_process(msg)
           end
           local name = user_print_name(msg.from)
           --Send this to that chat
-          send_large_msg("chat#id"..msg.to.id, "User [ "..name.." ]"..msg.from.id.." Globally banned (spamming)")
+          send_large_msg("channel#id"..msg.to.id, "User [ "..name.." ]"..msg.from.id.." Globally banned (spamming)")
           local log_group = 1 --set log group caht id
           --send it to log group
-          send_large_msg("chat#id"..log_group, "User [ "..name.." ] ( @"..username.." )"..msg.from.id.." Globally banned from ( "..msg.to.print_name.." ) [ "..msg.to.id.." ] (spamming)")
+          send_large_msg("channel#id"..log_group, "User [ "..name.." ] ( @"..username.." )"..msg.from.id.." Globally banned from ( "..msg.to.print_name.." ) [ "..msg.to.id.." ] (spamming)")
         end
       end
       kicktable[user] = true
