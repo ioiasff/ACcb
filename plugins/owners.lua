@@ -8,7 +8,7 @@ local function lock_group_namemod(msg, data, target)
   else
     data[tostring(target)]['settings']['lock_name'] = 'yes'
     save_data(_config.moderation.data, data)
-    rename_chat('chat#id'..target, group_name_set, ok_cb, false)
+    rename_chat('channel#id'..target, group_name_set, ok_cb, false)
   return 'Group name has been locked'
   end
 end
@@ -112,7 +112,7 @@ local function set_description(target, about)
 end
 
 local function run(msg, matches)
-  if msg.to.type ~= 'chat' then
+  if msg.to.type ~= 'channel' then
     local chat_id = matches[1]
     local receiver = get_receiver(msg)
     local data = load_data(_config.moderation.data)
@@ -149,7 +149,7 @@ local function run(msg, matches)
     end
     if matches[2] == 'kick' then
       local chat_id = matches[1]
-      if not is_owner2(msg.from.id, chat_id) then
+      if not is_owner2(msg.from.id, channel_id) then
         return "You are not the owner of this group"
       end
       if tonumber(matches[3]) == tonumber(our_id) then return false end
@@ -175,7 +175,7 @@ local function run(msg, matches)
         savelog(matches[1], name.." ["..msg.from.id.."] cleaned modlist")
       end
       if matches[3] == 'rules' then
-        if not is_owner2(msg.from.id, chat_id) then
+        if not is_owner2(msg.from.id, channel_id) then
           return "You are not the owner of this group"
         end
         local data_cat = 'rules'
@@ -185,7 +185,7 @@ local function run(msg, matches)
         savelog(matches[1], name.." ["..msg.from.id.."] cleaned rules")
       end
       if matches[3] == 'about' then
-        if not is_owner2(msg.from.id, chat_id) then
+        if not is_owner2(msg.from.id, channel_id) then
           return "You are not the owner of this group"
         end
         local data_cat = 'description'
@@ -196,7 +196,7 @@ local function run(msg, matches)
       end
     end
     if matches[2] == "setflood" then
-      if not is_owner2(msg.from.id, chat_id) then
+      if not is_owner2(msg.from.id, channel_id) then
         return "You are not the owner of this group"
       end
       if tonumber(matches[3]) < 5 or tonumber(matches[3]) > 20 then
@@ -210,7 +210,7 @@ local function run(msg, matches)
       return 'Group flood has been set to '..matches[3]
     end
     if matches[2] == 'lock' then
-      if not is_owner2(msg.from.id, chat_id) then
+      if not is_owner2(msg.from.id, channel_id) then
         return "You are not the owner of this group"
       end
       local target = matches[1]
@@ -226,7 +226,7 @@ local function run(msg, matches)
       end
     end
     if matches[2] == 'unlock' then
-      if not is_owner2(msg.from.id, chat_id) then
+      if not is_owner2(msg.from.id, channel_id) then
         return "You are not the owner of this group"
       end
       local target = matches[1]
@@ -243,17 +243,17 @@ local function run(msg, matches)
     end
     if matches[2] == 'new' then
       if matches[3] == 'link' then
-        if not is_owner2(msg.from.id, chat_id) then
+        if not is_owner2(msg.from.id, channel_id) then
           return "You are not the owner of this group"
         end
         local function callback (extra , success, result)
-          local receiver = 'chat#'..matches[1]
+          local receiver = 'channel#'..matches[1]
           vardump(result)
           data[tostring(matches[1])]['settings']['set_link'] = result
           save_data(_config.moderation.data, data)
           return 
         end
-        local receiver = 'chat#'..matches[1]
+        local receiver = 'channel#'..matches[1]
         local name = user_print_name(msg.from)
         savelog(matches[1], name.." ["..msg.from.id.."] revoked group link ")
         export_chat_link(receiver, callback, true)
@@ -293,7 +293,7 @@ local function run(msg, matches)
       data[tostring(matches[2])]['settings']['set_name'] = new_name
       save_data(_config.moderation.data, data)
       local group_name_set = data[tostring(matches[2])]['settings']['set_name']
-      local to_rename = 'chat#id'..matches[2]
+      local to_rename = 'channel#id'..matches[2]
       local name = user_print_name(msg.from)
       savelog(matches[2], "Group {}  name changed to [ "..new_name.." ] by "..name.." ["..msg.from.id.."]")
       rename_chat(to_rename, group_name_set, ok_cb, false)
